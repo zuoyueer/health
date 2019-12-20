@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/mvc
+       http://www.springframework.org/schema/mvc/spring-mvc.xsd
+       http://www.springframework.org/schema/aop
+       http://www.springframework.org/schema/aop/spring-aop.xsd
+       http://www.springframework.org/schema/tx
+       http://www.springframework.org/schema/tx/spring-tx.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd">
+
+
+    <!--注解驱动-->
+    <context:annotation-config/>
+
+
+    <!--注册自定义job-->
+    <bean id="jobDemo" class="com.zuoyueer.jobs.jobDemo"/>
+    <!--注册目标对象-->
+    <bean id="clearImgJob" class="com.zuoyueer.jobs.ClearImgJob"/>
+    <bean id="clearOrderSettingJob" class="com.zuoyueer.jobs.ClearOrderSettingJob"/>
+
+    <!--注册jobDetail,作用是负责通过反射调用指定的job-->
+    <bean id="jobDetail" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <!--注入目标对象-->
+        <property name="targetObject" ref="jobDemo"/>
+        <!--注入目标方法-->
+        <property name="targetMethod" value="run"/>
+    </bean>
+
+    <bean id="jobDetail2" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="clearImgJob"/>
+        <property name="targetMethod" value="clearImg"/>
+    </bean>
+
+    <bean id="jobDetail3" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="clearOrderSettingJob"/>
+        <property name="targetMethod" value="ClearOrderSettingBeforeDate"/>
+    </bean>
+
+    <bean id="cronTrigger3" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="jobDetail3"/>
+        <property name="cronExpression">
+            <!--每月的最后一天的凌晨2点-->
+            <value>0 0 2 L * ?</value>
+        </property>
+    </bean>
+
+    <bean id="cronTrigger2" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="jobDetail2"/>
+        <property name="cronExpression">
+            <value>0/10 * * * * ?</value>
+        </property>
+    </bean>
+
+    <!--注册一个触发器,指定任务触发的时间-->
+    <bean id="cronTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <!--注入jobDetail-->
+        <property name="jobDetail" ref="jobDetail"/>
+        <!--指定触发的时间,基于Cron表达式-->
+        <property name="cronExpression">
+            <value>0/3 * * * * ?</value>
+        </property>
+    </bean>
+
+    <!--注册一个统一的调度工厂,通过这个调度工厂调度任务-->
+    <bean id="scheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <ref bean="cronTrigger"/>
+                <ref bean="cronTrigger2"/>
+                <ref bean="cronTrigger3"/>
+            </list>
+        </property>
+    </bean>
+</beans>

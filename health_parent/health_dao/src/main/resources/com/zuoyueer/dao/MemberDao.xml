@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--namespace是命名空间,必须唯一,他是指是接口的全限定名 -->
+<mapper namespace="com.zuoyueer.dao.MemberDao">
+
+    <!--根据手机号查询会员-->
+    <select id="findByTelephone" resultType="com.zuoyueer.pojo.Member" parameterType="string">
+        select *
+        from t_member
+        where phoneNumber = #{phoneNumber}
+    </select>
+
+    <!--增加会员,并返回主键id -->
+    <insert id="add" parameterType="com.zuoyueer.pojo.Member">
+        <selectKey resultType="java.lang.Integer" keyProperty="id"
+                   order="AFTER">
+            SELECT LAST_INSERT_ID()
+        </selectKey>
+        insert into t_member
+        values (null, #{fileNumber}, #{name},#{sex},#{idCard},#{phoneNumber},
+        #{regTime},#{password},#{email},#{birthday},#{remark})
+    </insert>
+
+    <!--查询全部会员-->
+    <select id="findAll" resultType="com.zuoyueer.pojo.Member">
+        select *
+        from t_member
+    </select>
+
+    <!--根据条件查询会员: 分页插件-->
+    <select id="selectByCondition" parameterType="string" resultType="com.zuoyueer.pojo.Member">
+        select *
+        from t_member
+        where fileNumber = #{value}
+           or phoneNumber = #{value}
+           or name = #{value}
+    </select>
+
+    <!--根据id删除会员-->
+    <delete id="deleteById" parameterType="int">
+        delete
+        from t_member
+        where id = #{id}
+    </delete>
+
+    <!--根据id查询会员-->
+    <select id="findById" parameterType="int">
+        select *
+        from t_member
+        where id = #{id}
+    </select>
+
+    <!--修改会员,根据id-->
+    <update id="edit" parameterType="com.zuoyueer.pojo.Member">
+        update t_member
+        <set>
+            <if test="fileNumber!=null">
+                fileNumber = #{fileNumber},
+            </if>
+            <if test="name!=null">
+                name = #{name},
+            </if>
+            <if test="sex!=null">
+                sex = #{sex},
+            </if>
+            <if test="idCard!=null">
+                idCard = #{idCard},
+            </if>
+            <if test="phoneNumber!=null">
+                phoneNumber = #{phoneNumber},
+            </if>
+            <if test="regTime!=null">
+                regTime = #{regTime},
+            </if>
+            <if test="password!=null">
+                password = #{password},
+            </if>
+            <if test="email!=null">
+                email = #{email},
+            </if>
+            <if test="birthday!=null">
+                birthday = #{birthday},
+            </if>
+            <if test="remark!=null">
+                remark = #{remark}
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!--根据日期统计会员数，统计指定日期之前的会员数-->
+    <select id="findMemberCountBeforeDate" parameterType="string" resultType="int">
+        select count(id)
+        from t_member
+        where regTime &lt;= #{date}
+    </select>
+
+    <!--根据日期 统计当天会员数-->
+    <select id="findMemberCountByDate" parameterType="string" resultType="int">
+        select count(id)
+        from t_member
+        where regTime = #{date}
+    </select>
+
+    <!--统计指定日期之后的会员数-->
+    <select id="findMemberCountAfterDate" parameterType="string" resultType="int">
+        select count(*)
+        from t_member
+        where regTime >= #{date}
+    </select>
+
+    <!--统计会员总数-->
+    <select id="findMemberTotalCount" parameterType="string" resultType="int">
+        select count(id)
+        from t_member
+    </select>
+
+    <!--根据性别统计会员数-->
+    <select id="findMemberCountOfSex" resultType="map">
+        select sex name, count(*) value
+        from t_member
+        group by sex
+    </select>
+
+    <!--根据年龄段统计会员数-->
+    <select id="findMemberOfAgeReport" resultType="map" parameterType="map">
+        SELECT ageproportion AS name, COUNT(*) AS value
+        FROM (
+                 SELECT CASE
+                            WHEN birthday > #{dateOf18Year} AND birthday &lt;= #{now} THEN '0-18岁'
+                            WHEN birthday > #{dateOf30Year} AND birthday &lt;= #{dateOf18Year} THEN '18-30岁'
+                            WHEN birthday > #{dateOf45Year} AND birthday &lt;= #{dateOf30Year} THEN '30-45岁'
+                            WHEN birthday > #{dateOf60Year} AND birthday &lt;= #{dateOf45Year} THEN '45-60岁'
+                            ELSE '60岁以上'
+                            END
+                            AS ageproportion
+                 FROM t_member
+             ) a
+        GROUP BY ageproportion
+    </select>
+
+    <!--统计每个月的新增会员数-->
+    <select id="findMemberOfDateReport" resultType="int" parameterType="map">
+        select count(*) from t_member where regTime between #{startMoth} and #{ednMoth}
+    </select>
+</mapper>

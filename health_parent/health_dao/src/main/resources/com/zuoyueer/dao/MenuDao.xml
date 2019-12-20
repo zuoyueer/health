@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--namespace是命名空间,必须唯一,他是指是接口的全限定名 -->
+<mapper namespace="com.zuoyueer.dao.MenuDao">
+
+    <!--下面2个是初级版本-->
+    <!--查询一级菜单,需要根据优先级排序-->
+    <select id="findFirstMenu2" resultType="map">
+        SELECT id, path, name title, icon
+        FROM t_menu
+        WHERE parentMenuId IS NULL
+        and id in (select menu_id from t_role_menu
+        <where>
+            role_id in <foreach item="ids" index="id" collection="list"
+                                open="(" separator="," close=")">#{ids}</foreach>)
+        </where>
+
+        ORDER BY priority
+    </select>
+
+    <!--查询id查询,id对应菜单的子菜单-->
+    <select id="findSecondMenu2" resultType="map" parameterType="int">
+        select path, name title, icon, linkUrl
+        from t_menu
+        where parentMenuId = #{id}
+        ORDER BY priority
+    </select>
+
+    <!--下面的最新版..........................................................................................................-->
+    <!--根据权限对应的菜单id集合, 查询一级菜单-->
+    <select id="findFirstMenu" resultType="map">
+        SELECT id, path, name title, icon
+        FROM t_menu
+        WHERE parentMenuId IS NULL
+        and
+        id in
+        <foreach item="ids" index="id" collection="list"
+                 open="(" separator="," close=")">#{ids}
+        </foreach>
+        ORDER BY priority
+    </select>
+
+    <!--根据一级菜单的id查询,id对应菜单的子菜单-->
+    <select id="findSecondMenu" resultType="map" parameterType="map">
+        select path, name title, icon, linkUrl
+        from t_menu
+        where parentMenuId = #{id}
+        and
+        id in
+        <foreach item="menuIds" index="id" collection="menuIds"
+                 open="(" separator="," close=")">#{menuIds}
+        </foreach>
+        ORDER BY priority
+    </select>
+
+    <!--用户名查询所属菜单id集合-->
+    <select id="findMenuIdsByUsername" resultType="int" parameterType="string">
+        SELECT rm.menu_id
+        FROM t_role_menu rm,
+             t_user_role ur,
+             t_user u
+        WHERE u.username = #{username}
+          AND u.id = ur.user_id
+          AND ur.role_id = rm.role_id
+    </select>
+
+
+    <!--下面是CURD.................................................................................................-->
+
+    <!--增加-->
+    <insert id="add" parameterType="com.zuoyueer.pojo.Menu" keyProperty="id" useGeneratedKeys="true">
+        insert into t_menu (name, linkUrl, path, priority, icon, description, parentMenuId, level)
+        values (#{name}, #{linkUrl}, #{path}, #{priority}, #{icon}, #{description}, #{parentMenuId}, #{level})
+    </insert>
+
+    <!--分页查询-->
+    <select id="selectByCondition" parameterType="string" resultType="com.zuoyueer.pojo.Menu">
+        select * from t_menu
+        <if test="value!=null and value.length>0">
+            where name = #{queryString}
+        </if>
+    </select>
+
+    <!--根据检查项id查询中间关系表-->
+    <select id="findCountByMenuId" parameterType="int" resultType="long">
+        select count(*)
+        from t_role_menu
+        where menu_id = #{id}
+    </select>
+
+    <!--删除-->
+    <delete id="deleteById" parameterType="int">
+        delete
+        from t_menu
+        where id = #{id}
+    </delete>
+
+    <!--根据id查询-->
+    <select id="findById" parameterType="int" resultType="com.zuoyueer.pojo.Menu">
+        select *
+        from t_menu
+        where id = #{id}
+    </select>
+
+    <!--修改,根据id修改-->
+    <update id="edit" parameterType="com.zuoyueer.pojo.Menu">
+        update t_menu
+        <set>
+            <if test="name != null">
+                name = #{name},
+            </if>
+            <if test="linkUrl != null">
+                linkUrl = #{linkUrl},
+            </if>
+
+            <if test="path != null">
+                path = #{path},
+            </if>
+
+            <if test="priority != null">
+                priority = #{priority},
+            </if>
+            <if test="icon != null">
+                icon = #{icon},
+            </if>
+            <if test="description != null">
+                description = #{description},
+            </if>
+            <if test="parentMenuId != null">
+                parentMenuId = #{parentMenuId},
+            </if>
+            <if test="level != null">
+                level = #{level},
+            </if>
+        </set>
+        where id=#{id}
+    </update>
+
+    <!--查询全部-->
+    <select id="findAll" resultType="com.zuoyueer.pojo.Menu">
+        select *
+        from t_menu
+    </select>
+
+
+</mapper>

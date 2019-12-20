@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--namespace是命名空间,必须唯一,他是指是接口的全限定名 -->
+<mapper namespace="com.zuoyueer.dao.CheckGroupDao">
+
+    <!--增加项目组-->
+    <insert id="add" parameterType="com.zuoyueer.pojo.CheckGroup" keyProperty="id" useGeneratedKeys="true">
+        <!--
+                下面的整个selectKey表示:将插入数据的主键返回到User对象中的uid属性中
+
+                SELECT_LAST_INSERT_ID(): 表示获取最后插入的记录的ID(主键)值,是一个函数
+                keyProperty: 将得到的主键值,设置到parameterType指定对象的某一个属性里,下面的示例设置到User对象的uid属性里
+                resultType: 这个很好理解,就是指定执行函数的返回类型,示例是SELECT_LAST_INSERT_ID()的返回类型
+                order: 指定函数的执行顺序,AFTER表示在insert语句之后执行,还有另外一个值是BEFORE表示在insert语句之前执行
+                -->
+        <!--<selectKey resultType="int" keyProperty="uid" order="AFTER">
+            select last_insert_id()
+        </selectKey>-->
+
+        insert into t_checkgroup
+        values (NULL, #{code}, #{name}, #{helpCode}, #{sex}, #{remark}, #{attention})
+    </insert>
+
+    <!--增加中间表的关联记录-->
+    <insert id="setCheckGroupAndCheckItem" parameterType="hashmap">
+        insert into t_checkgroup_checkitem
+        values (#{checkgroup_id}, #{checkitem_id})
+    </insert>
+
+    <!--条件查询-->
+    <select id="selectByCondition" parameterType="string" resultType="com.zuoyueer.pojo.CheckGroup">
+        select * from t_checkgroup
+        <if test="xx != null and xx.length>0">
+            where code = #{xx} or name = #{xx} or helpCode=#{xx}
+        </if>
+    </select>
+
+    <!--根据id查询-->
+    <select id="findById" parameterType="int" resultType="com.zuoyueer.pojo.CheckGroup">
+        select *
+        from t_checkgroup
+        where id = #{id}
+    </select>
+
+    <!--查询检查组中的检查项id集合-->
+    <select id="findCheckItemIdsByCheckGroupId" resultType="int" parameterType="int">
+        select checkitem_id
+        from t_checkgroup_checkitem
+        where checkgroup_id = #{id}
+    </select>
+
+    <!--根据检查组的id 删除中间表的数据-->
+    <delete id="deleteAssociation" parameterType="int">
+        delete
+        from t_checkgroup_checkitem
+        where checkgroup_id = #{id}
+    </delete>
+
+    <!--删除检查组的数据-->
+    <delete id="delete" parameterType="int">
+        delete
+        from t_checkgroup
+        where id = #{id}
+    </delete>
+
+    <!--修改检查组-->
+    <update id="edit" parameterType="com.zuoyueer.pojo.CheckGroup">
+        update t_checkgroup
+        <set>
+            <if test="code!=null">
+                code = #{code},
+            </if>
+            <if test="name!=null">
+                name = #{name},
+            </if>
+            <if test="helpCode!=null">
+                helpCode = #{helpCode},
+            </if>
+            <if test="sex!=null">
+                sex = #{sex},
+            </if>
+            <if test="remark!=null">
+                remark = #{remark},
+            </if>
+            <if test="attention != null">
+                attention = #{attention},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!--查询全部-->
+    <select id="findAll" resultType="com.zuoyueer.pojo.CheckGroup">
+        select *
+        from t_checkgroup
+    </select>
+
+    <!--多对多的多表查询:根据id查询检查项-->
+    <resultMap id="findCheckItem" type="com.zuoyueer.pojo.CheckGroup">
+        <collection property="checkItems" column="id" ofType="com.zuoyueer.pojo.CheckItem"
+                    select="com.zuoyueer.dao.CheckItemDao.findCheckItemById"/>
+    </resultMap>
+
+    <!--根据id查询检查组-->
+    <select id="findCheckGroupById" resultMap="findCheckItem">
+        select *
+        from t_checkgroup
+        where id in (select checkgroup_id from t_setmeal_checkgroup where setmeal_id = #{id})
+    </select>
+</mapper>

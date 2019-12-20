@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--namespace是命名空间,必须唯一,他是指是接口的全限定名 -->
+<mapper namespace="com.zuoyueer.dao.UserDao">
+
+    <resultMap id="findRole" type="com.zuoyueer.pojo.User">
+        <id column="id" property="id"/>
+        <collection property="roles" column="id" ofType="com.zuoyueer.pojo.Role"
+                    select="com.zuoyueer.dao.RoleDao.findRoleByUserId"/>
+    </resultMap>
+
+    <select id="findUserByUsername" parameterType="string" resultMap="findRole">
+        select *
+        from t_user
+        where username = #{username}
+    </select>
+
+    <!--_________________________________下面是CURD______________________________________________-->
+
+
+
+    <!--增加项目组-->
+    <insert id="add" parameterType="com.zuoyueer.pojo.User" keyProperty="id" useGeneratedKeys="true">
+
+        insert into t_user
+        values (NULL, #{birthday}, #{gender}, #{username}, #{password}, #{remark}, #{station},#{telephone})
+    </insert>
+
+    <!--增加中间表的关联记录-->
+    <insert id="setUserAndRole" parameterType="hashmap">
+        insert into t_user_role
+        values (#{user_id}, #{role_id})
+    </insert>
+
+    <!--分页条件查询-->
+    <select id="selectByCondition" parameterType="string" resultType="com.zuoyueer.pojo.User">
+        select * from t_user
+        <if test="value != null and value.length>0">
+            where username = #{value} or telephone = #{value}
+        </if>
+    </select>
+
+    <!--根据id查询-->
+    <select id="findById" parameterType="int" resultType="com.zuoyueer.pojo.User">
+        select *
+        from t_user
+        where id = #{id}
+    </select>
+
+    <!--查询检查组中的检查项id集合-->
+    <select id="findRoleIdsByUserId" resultType="int" parameterType="int">
+        select role_id
+        from t_user_role
+        where user_id = #{id}
+    </select>
+
+    <!--根据检查组的id 删除中间表的数据-->
+    <delete id="deleteAssociation" parameterType="int">
+        delete
+        from t_user_role
+        where user_id = #{id}
+    </delete>
+
+    <!--删除检查组的数据-->
+    <delete id="delete" parameterType="int">
+        delete
+        from t_user
+        where id = #{id}
+    </delete>
+
+    <!--修改检查组-->
+    <update id="edit" parameterType="com.zuoyueer.pojo.User">
+        update t_user
+        <set>
+            <if test="birthday!=null">
+                birthday = #{birthday},
+            </if>
+            <if test="gender!=null">
+                gender = #{gender},
+            </if>
+            <if test="username!=null">
+                username = #{username},
+            </if>
+            <if test="password!=null">
+                password = #{password},
+            </if>
+            <if test="remark!=null">
+                remark = #{remark},
+            </if>
+            <if test="station != null">
+                station = #{station},
+            </if>
+            <if test="telephone != null">
+                telephone = #{telephone}
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!--查询全部-->
+    <select id="findAll" resultType="com.zuoyueer.pojo.User">
+        select *
+        from t_user
+    </select>
+
+
+
+</mapper>

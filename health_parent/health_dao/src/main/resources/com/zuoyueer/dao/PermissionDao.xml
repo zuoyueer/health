@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--namespace是命名空间,必须唯一,他是指是接口的全限定名 -->
+<mapper namespace="com.zuoyueer.dao.PermissionDao">
+
+    <select id="findPermissionByRoleId" parameterType="int" resultType="com.zuoyueer.pojo.Permission">
+        select *
+        from t_permission
+        where id in (select permission_id from t_role_permission where role_id = #{id})
+    </select>
+
+    <!--_________________________________下面是CURD________________________________________-->
+
+
+    <!--增加-->
+    <insert id="add" parameterType="com.zuoyueer.pojo.Permission" keyProperty="id" useGeneratedKeys="true">
+        insert into t_permission (name, keyword, description)
+        values (#{name}, #{keyword}, #{description})
+    </insert>
+
+    <!--分页查询-->
+    <select id="selectByCondition" parameterType="string" resultType="com.zuoyueer.pojo.Permission">
+        select * from t_permission
+        <if test="value!=null and value.length>0">
+            where keyword = #{keyword}
+        </if>
+    </select>
+
+    <!--根据检查项id查询中间关系表-->
+    <select id="findCountByPermissionId" parameterType="int" resultType="long">
+        select count(*)
+        from t_role_permission
+        where permission_id = #{id}
+    </select>
+
+    <!--删除-->
+    <delete id="deleteById" parameterType="int">
+        delete
+        from t_permission
+        where id = #{id}
+    </delete>
+
+    <!--根据id查询-->
+    <select id="findById" parameterType="int" resultType="com.zuoyueer.pojo.Permission">
+        select *
+        from t_permission
+        where id = #{id}
+    </select>
+
+    <!--修改,根据id修改-->
+    <update id="edit" parameterType="com.zuoyueer.pojo.Permission">
+        update t_permission
+        <set>
+            <if test="name != null">
+                name = #{name},
+            </if>
+            <if test="keyword != null">
+                keyword = #{keyword},
+            </if>
+
+            <if test="description != null">
+                description = #{description},
+            </if>
+        </set>
+        where id=#{id}
+    </update>
+
+    <!--查询全部-->
+    <select id="findAll" resultType="com.zuoyueer.pojo.Permission">
+        select *
+        from t_permission
+    </select>
+
+</mapper>

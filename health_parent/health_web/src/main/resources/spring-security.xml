@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/mvc
+       http://www.springframework.org/schema/mvc/spring-mvc.xsd
+       http://www.springframework.org/schema/aop
+       http://www.springframework.org/schema/aop/spring-aop.xsd
+       http://www.springframework.org/schema/tx
+       http://www.springframework.org/schema/tx/spring-tx.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd">
+
+    <!--配置匿名访问资源:静态资源和登录页面-->
+    <security:http security="none" pattern="/js/**"/>
+    <security:http security="none" pattern="/css/**"/>
+    <security:http security="none" pattern="/img/**"/>
+    <security:http security="none" pattern="/plugins/**"/>
+    <security:http security="none" pattern="/login.html"/>
+
+    <!--配置认证后访问资源-->
+    <security:http auto-config="true" use-expressions="true">
+        <security:headers>
+            <!--设置页面可以通过iframe(前端html技术)访问收到保护的页面,默认是不允许访问的-->
+            <security:frame-options policy="SAMEORIGIN"/>
+        </security:headers>
+        <!--设置pages路径下的资源,登录后才能访问-->
+        <security:intercept-url pattern="/pages/**" access="isAuthenticated()"/>
+
+        <!--配置自定义登录页面
+            login-page:指定登录页面
+            usernameparameter:指定登录页面的用户名标签的name属性值
+            password-parameter:指定登录页面的密码标签的name属性值
+            login-processing-url:指定登录请求发送的地址
+            always-use-default-target:总是跳转
+            authentication-failure-url:登录失败跳转的页面
+        -->
+        <security:form-login login-page="/login.html" default-target-url="/pages/main.html"
+                             username-parameter="username" password-parameter="password" login-processing-url="/login.do"
+                             always-use-default-target="true" authentication-failure-url="/login.html"/>
+        <!--禁止csrf过滤器,和自定义登录页面配合使用,不然无法访问自定义登录页面-->
+        <security:csrf disabled="true"/>
+
+        <!--配置退出登录-->
+        <security:logout logout-url="/logout.do"
+                         logout-success-url="/login.html"
+                         invalidate-session="true"/>
+    </security:http>
+
+    <!--配置认证管理器:-->
+    <security:authentication-manager>
+        <security:authentication-provider user-service-ref="springSecurityUserService">
+            <!--指定密码加密策略-->
+            <security:password-encoder ref="bCryptPasswordEncoder"/>
+        </security:authentication-provider>
+    </security:authentication-manager>
+
+    <!--<bean id="springSecurityUserService" class="com.zuoyueer.security.SpringSecurityUserService"/>-->
+    <bean id="bCryptPasswordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"/>
+
+    <!--开启注解方式权限控制-->
+    <security:global-method-security pre-post-annotations="enabled"/>
+</beans>

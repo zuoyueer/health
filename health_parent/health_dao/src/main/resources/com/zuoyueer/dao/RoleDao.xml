@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--namespace是命名空间,必须唯一,他是指是接口的全限定名 -->
+<mapper namespace="com.zuoyueer.dao.RoleDao">
+
+    <resultMap id="findPermission" type="com.zuoyueer.pojo.Role">
+        <id property="id" column="id"/>
+        <collection property="permissions" column="id" ofType="com.zuoyueer.pojo.Permission"
+                    select="com.zuoyueer.dao.PermissionDao.findPermissionByRoleId"/>
+    </resultMap>
+
+    <select id="findRoleByUserId" resultMap="findPermission" parameterType="int">
+        select *
+        from t_role
+        where id in (select role_id from t_user_role where user_id = #{id})
+    </select>
+
+    <!--______________________________________下面是CURD__________________________________________-->
+
+
+    <!--增加角色-->
+    <insert id="add" parameterType="com.zuoyueer.pojo.Role" keyProperty="id" useGeneratedKeys="true">
+        insert into t_role
+        values (NULL, #{name}, #{keyword}, #{description})
+    </insert>
+
+    <!--增加角色菜单中间表的关联记录-->
+    <insert id="setRoleAndMenu" parameterType="hashmap">
+        insert into t_role_menu
+        values (#{role_id}, #{menu_id})
+    </insert>
+
+    <!--增加角色权限中间表的关联记录-->
+    <insert id="setRoleAndPermission" parameterType="hashmap">
+        insert into t_role_permission
+        values (#{role_id}, #{permission_id})
+    </insert>
+
+    <!--分页条件查询-->
+    <select id="selectByCondition" parameterType="string" resultType="com.zuoyueer.pojo.Role">
+        select * from t_role
+        <if test="value != null and value.length>0">
+            where name = #{value} or keyword = #{value}
+        </if>
+    </select>
+
+    <!--根据id查询-->
+    <select id="findById" parameterType="int" resultType="com.zuoyueer.pojo.Role">
+        select *
+        from t_role
+        where id = #{id}
+    </select>
+
+    <!--查询的菜单id集合-->
+    <select id="findMenuIdsByRoleId" resultType="int" parameterType="int">
+        select menu_id
+        from t_role_menu
+        where role_id = #{id}
+    </select>
+
+    <!--查询的权限id集合-->
+    <select id="findPermissionIdsByRoleId" resultType="int" parameterType="int">
+        select permission_id
+        from t_role_permission
+        where role_id = #{id}
+    </select>
+
+    <!--根据角色的id 删除菜单中间表的数据-->
+    <delete id="deleteAssociationOfMenu" parameterType="int">
+        delete
+        from t_role_menu
+        where role_id = #{id}
+    </delete>
+
+    <!--根据角色的id 删除权限中间表的数据-->
+    <delete id="deleteAssociationOfPermission" parameterType="int">
+        delete
+        from t_role_permission
+        where role_id = #{id}
+    </delete>
+
+    <!--删除角色的数据-->
+    <delete id="delete" parameterType="int">
+        delete
+        from t_role
+        where id = #{id}
+    </delete>
+
+    <!--修改角色-->
+    <update id="edit" parameterType="com.zuoyueer.pojo.Role">
+        update t_role
+        <set>
+            <if test="name!=null">
+                name = #{name},
+            </if>
+            <if test="keyword!=null">
+                keyword = #{keyword},
+            </if>
+            <if test="description!=null">
+                description = #{description},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!--查询全部-->
+    <select id="findAll" resultType="com.zuoyueer.pojo.Role">
+        select *
+        from t_role
+    </select>
+
+</mapper>

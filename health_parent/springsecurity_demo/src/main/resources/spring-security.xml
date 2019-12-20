@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/mvc
+       http://www.springframework.org/schema/mvc/spring-mvc.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/security
+       http://www.springframework.org/schema/security/spring-security.xsd">
+
+    <!--spring的一些配置-->
+    <context:annotation-config/>
+    <mvc:annotation-driven/>
+    <context:component-scan base-package="com.zuoyueer.controller"/>
+
+
+    <!--配置可以匿名访问的资源,这个必须在拦截全部(pattern="/**" )的前面配置
+       security="none"  就是可以通过匿名访问
+       patern: 指定可以匿名访问的资源路径,  ** 表示后代的全部子路径
+    -->
+    <security:http security="none" pattern="/login.html"/>
+    <security:http security="none" pattern="/css/**"/>
+    <security:http security="none" pattern="/js/**"/>
+
+
+    <!--配置需要权限才能访问的资源,其实就是拦截规则:
+        http：用于定义相关权限控制
+        auto-config：是否自动配置
+                        设置为true时框架会提供默认的一些配置，例如提供默认的登录页面、登出处理等
+                        设置为false时需要显示提供登录表单配置，否则会报错
+        use-expressions: 用于指定intercept-url中的access属性是否使用表达式
+                        false 不使用表达式;  true:使用表达式  :   (hasRole('ROLE_ADMIN')
+    -->
+    <security:http auto-config="true" use-expressions="true">
+        <!--
+             intercept-url：定义一个拦截规则
+             pattern：对哪些url进行权限控制
+             access：在请求对应的URL时需要什么权限，默认配置时它应该是一个以逗号分隔的角色列表，请求的用户只需拥有其中的一个角色就能成功访问对应的URL
+             isAuthenticated()：已经经过认证（不是匿名用户）
+         -->
+        <!--只要认证通过就能访问-->
+        <security:intercept-url pattern="/index.jsp" access="isAuthenticated()"/>
+        <security:intercept-url pattern="/a.html" access="isAuthenticated()"/>
+        <!--拥有add权限就可以访问b.html,c.html页面,两种写法-->
+        <security:intercept-url pattern="/b.html" access="hasAuthority('add')"/>
+        <security:intercept-url pattern="/c.html" access="hasRole('ROLE_add')"/>
+        <!--拥有ADMIN权限才能访问d.html,注意：此处虽然写的是ADMIN角色，框架会自动给加上前缀ROLE_-->
+        <security:intercept-url pattern="/d.html" access="hasRole('ADMIN')"/>
+
+        <!--   use-expressions="false"的情况下的配置:
+            <security:intercept-url pattern="/index.jsp"  access="" />
+            <security:intercept-url pattern="/a.html"  access="" />
+            <security:intercept-url pattern="/b.html"  access="ROLE_add" />
+            <security:intercept-url pattern="/c.html"  access="ROLE_ADMIN" />
+            <security:intercept-url pattern="/d.html"  access="ROLE_ADMIN" />
+            <security:intercept-url pattern="/**" access="ROLE_ADMIN"/>
+        -->
+
+        <!--form-login 配置自定义的登录页面
+            username-parameter:登录的input中的name属性值,默认是username
+            password-parameter:登录的input中的password属性值,默认是password
+            login-processing-url:登录请求
+            authentication-failure-url:登录失败页面
+            authentication-success-forward-url:指定登录成功跳转的页面
+        -->
+        <security:form-login
+                login-page="/login.html"
+                username-parameter="username"
+                password-parameter="password"
+                login-processing-url="/login.do"
+                authentication-failure-url="/login.html"
+                default-target-url="/index.jsp"
+                authentication-success-forward-url="/index.jsp"
+        ></security:form-login>
+
+        <!--配置登出,不配做的话要访问localhost:8080/logout才能退出登录
+            配置之后: 访问localhost:8080/logout.do 才能退出登录
+            logout-url: 退出登录的路径
+            logout-success-url: 退出登录后,跳转的页面
+            invalidate-session: 退出登录后,是否销毁session
+        -->
+        <security:logout logout-url="/logout.do" logout-success-url="/login.html" invalidate-session="true"/>
+
+        <!--
+             csrf：对应CsrfFilter过滤器
+             disabled：是否启用CsrfFilter过滤器，如果使用自定义登录页面需要关闭此项，否则登录操作会被禁用（403）,拒绝访问
+           -->
+        <security:csrf disabled="true"></security:csrf>
+    </security:http>
+
+
+    <!--配置认证管理器-->
+    <!-- <security:authentication-manager>
+         <security:authentication-provider>
+             <security:user-service>
+                 &lt;!&ndash;配置账号密码,以及该账户的角色信息
+                 name: 用户名
+                 password: 密码 {noop}表示不加密方式
+                 authorities: 该账户赋予的角色
+                 &ndash;&gt;
+                 <security:user name="admin" authorities="ROLE_ADMIN" password="{noop}admin"/>
+             </security:user-service>
+         </security:authentication-provider>
+     </security:authentication-manager>-->
+
+
+    <!--注册MySpringSecurtiyService-->
+    <bean id="mySpringSecurityService" class="com.zuoyueer.security.MySpringSecurityService"/>
+
+    <!--注册bcrypt密码加密对象-->
+    <bean id="bCryptPasswordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"/>
+
+    <!-- authentication-manager：认证管理器，用于处理认证操作 -配置为自定义认证授权类-->
+    <security:authentication-manager>
+        <!-- authentication-provider：认证提供者，执行具体的认证逻辑
+                    user-service-ref指定认证实现类 -->
+        <security:authentication-provider user-service-ref="mySpringSecurityService">
+            <!--指定密码加密策略-->
+            <security:password-encoder ref="bCryptPasswordEncoder"/>
+        </security:authentication-provider>
+    </security:authentication-manager>
+
+
+    <!--开启注解方式权限控制-->
+    <security:global-method-security pre-post-annotations="enabled"/>
+</beans>
